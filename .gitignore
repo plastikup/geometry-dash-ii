@@ -1,0 +1,2 @@
+# '.vscode/' is NOT gitignored to preserve 8-width tabs across every platform
+disks/
