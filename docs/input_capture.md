@@ -1,13 +1,14 @@
 # Input capture
 
 ### I/O Interface
+
 | Registers | Arguments | Return values |
 | :-: | :-: | :-: |
 | **A** | *any* | Registered keystroke OR `$FF` |
-| **X** | *any* | *any* |
-| **Y** | *any* | *any* |
+| **X** | *any* | *unmodified* |
+| **Y** | *any* | *unmodified* |
 
-### Behavior and Constraints
+### Behavior
 
 > [!IMPORTANT]  
 > Input capturing **cannot** be done through addresses `$FD6F (GETLN)` and `$FD0C (RDKEY)` — those routines **wait** for an user keyboard interaction.
@@ -17,13 +18,13 @@ Input capture subroutine **reads** at the memory address `$C000` and expects a v
 ### Example Implementation
 
 ```asm
-INPT	LDA	$C000	; read keystroke
-		BPL	NOKEY	; verify if A < $80
+INPT    LDA     $C000    ; read keystroke
+        BPL     NOKEY    ; verify if A < $80
 
-RCVD	BIT	$C010	; clear keyboard strobe
-		AND #$7F	; remove bit 7
-		RTS			; return with key in A
+RCVD    BIT     $C010    ; clear keyboard strobe
+        AND     #$7F     ; remove bit 7
+        RTS              ; return with key in A
 
-NOKEY	LDA #$FF	; load neutral flag
-		RTS			; return with no key
+NOKEY   LDA     #$FF     ; load neutral flag
+        RTS              ; return with no key
 ```
