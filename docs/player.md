@@ -16,7 +16,7 @@ The player subroutine is responsible for the character's physics. When called, i
 
 | Name | Addresses | Details |
 | :-: | :-: | - |
-| XPOS | `$60 $61` | The X position of the player, which, by definition, also defines the X scroll of the map itself. |
+| XPOS | `$60 $61` | The X position of the player. |
 | YPOS | `$62` | The Y position of the player. Unlike XPOS, YPOS only needs to be one octet long because the map is not vertically scrollable. |
 | YVEL | `$63` | The Y velocity of the player. A value of +/-128 travels at 1 block per frame. |
 | YACC | `$64` | The Y acceleration of the player. Usually the gravity. A value of +/-128 speeds up at 1 block per frame. |
