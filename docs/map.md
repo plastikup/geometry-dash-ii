@@ -29,7 +29,7 @@ A pointer will keep track of what the current character is, and a counter will c
 | Name | Addresses | Details |
 | :-: | :-: | - |
 | XPOS | `$60 $61` | The X position of the player. |
-| LVL[0-F] | *absolute* | The compressed level data for each line from 0 to B. |
+| LVL[0-B] | *absolute* | The compressed level data for each line from 0 to B. |
 | LVLPTR | *absolute* | A table of 12 pointers for each level line. |
 | LVLCHRS | *absolute* | A table of 12 current ASCII tiles. |
 | LVLQNT | *absolute* | A table of 12 ints that counts, in reverse, the remaining quantity of tiles to duplicate. |
