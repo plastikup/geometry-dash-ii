@@ -44,30 +44,32 @@ The goal of this module is to extract one single tile's datum from a provided co
 | :-: | :-: | :-: |
 | **A** | *any* | *garbage data* |
 | **X** | Int (row/line) | *garbage data* |
-| **Y** | Int (column/tile) | *garbage data* |
+| **Y** | *any* | *garbage data* |
 
 ```asm
 * Multiply X and Y registers by 2
 TXA
-ASL     A               ; each pointer is 2 bytes
+ASL             ; each pointer is 2 bytes
 TAX
-TYA
-ASL     A               ; each map datum is 2 bytes
-TAY
 
 * Build tile pointer
 LDA     LVLPTR,X
-STA     ptr
+STA     PTR
 LDA     LVLPTR+1,X
-STA     ptr+1
+STA     PTR+1
 
 * Access tile datum
-LDA (ptr),Y
-STA LVLCHRS,X
+LDY     #0
+TXA
+ASL             ; each table element is 1 byte
+TAX
+
+LDA     (PTR),Y
+STA     LVLCHRS,X
 
 INY
-LDA (ptr),Y
-STA LVLQNT,X
+LDA     (PTR),Y
+STA     LVLQNT,X
 
 RTS
 ```
