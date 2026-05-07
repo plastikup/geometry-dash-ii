@@ -1,12 +1,20 @@
 ** =============== Zero page ===============
 PTR	EQU	$F6	; quick temporary pointer storage (occupies $F6 and $F7)
 TEMP	EQU	$F5	; quick random value storage
+HOME	EQU	$FC58	; delete screen
 
 ** ============ Start of program ===========
 ** MAIN LOOP
 	ORG	$8000
 
+	JSR	HOME
 	LDY	#1	; TEMPORARY - value to test the displacement module
+	LDA	#$CA
+	STA	$428
+	STA	$430
+	STA	$432
+	STA	$434
+
 MAIN	JSR	WAIT
 * Capture keypress
 	JSR	INPUT
@@ -19,7 +27,8 @@ MAIN	JSR	WAIT
 * Print keypress
 	JSR	DEBUG
 	JMP	MAIN
-MAINCOPYSCRN	JSR	COPYSCRN
+MAINCOPYSCRN	JSR	HOME
+	JSR	COPYSCRN
 	JMP	MAIN
 
 
@@ -76,10 +85,13 @@ DEBUG	STA	TEMP	; keep the debugging ASCII text aside
 ** COPY SCREEN TOWARDS THE LEFT
 COPYSCRN	STY	TEMP	; store displacement value for reuse
 * OUTERMOST LOOP
-ADVCLOOP	LDX	#24	; repeat copying 24 times (24 rows) starting with the bottom
+ADVCLOOP	LDX	#23	; repeat copying 24 times (24 rows) starting with the bottom
 * COPYING LOOP
 * Retrieve the value to copy
-COPYLP 	LDA	SCRNROWPTR,X
+COPYLP	TXA		; multiply by two cause 2 octets by line
+	ASL
+	TAX
+ 	LDA	SCRNROWPTR,X
 	STA	PTR
 	LDA	SCRNROWPTR+1,X	; repeat with higher bit
 	STA	PTR+1
@@ -100,7 +112,7 @@ COPYLP 	LDA	SCRNROWPTR,X
 	TAY		; transfer source to Y register
 * Decrease innermost copying loop
 	DEX
-	BCS	COPYLP	; jump if X is still positive
+	BNE	COPYLP	; jump if X is still positive
 * Increase outermost loop
 	INY
 	TYA		; transfer to A to check #columns overflow
