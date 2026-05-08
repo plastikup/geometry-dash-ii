@@ -74,7 +74,7 @@ STA     LVLQNT,X
 RTS
 ```
 
-#### Update pointer table
+#### Increment pointer table
 
 Each pointer of the pointers table `LVLPTR` all initially point at the beginning of each ASCII string lines. As you progress in the game, it is necessary to update the pointer's value.
 
@@ -93,21 +93,15 @@ TXA
 ASL     A   ; each map datum is 2 bytes
 TAX
 
-* Load pointer
-LDA LVLPTR,Y
-STA ptr
-LDA LVLPTR+1,Y
-STA ptr+1
-
 * Add X to pointer
 TXA
 CLC
-ADC ptr
-STA ptr
+ADC LVLPTR,Y
+STA LVLPTR,Y
 
-LDA ptr+1
+LDA LVLPTR+1,Y
 ADC #0      ; propagate carry
-STA ptr+1
+STA LVLPTR+1,Y
 
 RTS
 ```
