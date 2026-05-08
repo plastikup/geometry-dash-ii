@@ -1,14 +1,11 @@
 ** =============== Zero page ===============
 PTR	EQU	$F6	; quick temporary pointer storage (occupies $F6 and $F7)
 TEMP	EQU	$F5	; quick random value storage
-HOME	EQU	$FC58	; delete screen
 
 ** ============ Start of program ===========
 ** MAIN LOOP
 	ORG	$8000
 
-	JSR	HOME
-	LDY	#1	; TEMPORARY - value to test the displacement module
 	LDA	#$CA
 	STA	$428
 	STA	$430
@@ -27,7 +24,7 @@ MAIN	JSR	WAIT
 * Print keypress
 	JSR	DEBUG
 	JMP	MAIN
-MAINCOPYSCRN	JSR	HOME
+MAINCOPYSCRN	LDY	#1	; TEMPORARY - value to test the displacement module
 	JSR	COPYSCRN
 	JMP	MAIN
 
@@ -56,6 +53,10 @@ PRINT	PHA		; save ASCII text into stack
 	STA	PTR	; save the row coordinate to use it with indirect mode
 	LDA	SCRNROWPTR+1,X	; repeat with higher bit
 	STA	PTR+1
+
+	TXA
+	LSR		; restore X register to initial state
+	TAX
 
 	PLA		; retrieve the ASCII text from stack
 	STA	(PTR),Y	; write the character on screen in the exact coordinate
@@ -87,16 +88,21 @@ COPYSCRN	STY	TEMP	; store displacement value for reuse
 * OUTERMOST LOOP
 ADVCLOOP	LDX	#23	; repeat copying 24 times (24 rows) starting with the bottom
 * COPYING LOOP
-* Retrieve the value to copy
-COPYLP	TXA		; multiply by two cause 2 octets by line
+* Multiply X by 2 because 2 bits per line
+COPYLP	TXA
 	ASL
 	TAX
+* Retrieve the value to copy
  	LDA	SCRNROWPTR,X
 	STA	PTR
 	LDA	SCRNROWPTR+1,X	; repeat with higher bit
 	STA	PTR+1
 	LDA	(PTR),Y
 	PHA		; save the value to retrieve later
+* Restore modified X register
+	TXA
+	LSR
+	TAX
 * Adjust Y for printing coordinates
 	TYA
 	SEC
@@ -115,11 +121,9 @@ COPYLP	TXA		; multiply by two cause 2 octets by line
 	BNE	COPYLP	; jump if X is still positive
 * Increase outermost loop
 	INY
-	TYA		; transfer to A to check #columns overflow
-	SEC
-	SBC	#39	; 40 columns, so minus 39 to get A=0 if need to RTS
-	BEQ	RTS	; RTS if A-39=0
-	JMP	ADVCLOOP
+	CPY	#40	; 40 is the first column to overflow
+	BEQ	RTS	; RTS if overflow
+	JMP	ADVCLOOP	; otherwise continue loop
 
 ** ================= Utils =================
 ** REQUEST_ANIMATION_FRAME SUBROUTINE

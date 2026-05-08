@@ -17,7 +17,7 @@ The goal of this module is to take an ASCII value and print it on the screen on 
 | Registers | Arguments | Return values |
 | :-: | :-: | :-: |
 | **A** | ASCII (printed text) | *unmodified* |
-| **X** | Int (row) | *garbage data* |
+| **X** | Int (row) | *unmodified* |
 | **Y** | Int (column) | *unmodified* |
 
 > [!IMPORTANT]  
@@ -32,8 +32,12 @@ TAX
 
 LDA     SCRNROWPTR,X    ; load the screen row pointer
 STA     PTR             ; save the row coordinate to use it with indirect mode
-LDA     SCRNROWPTR,X    ; repeat with higher bit
-STA     PTR
+LDA     SCRNROWPTR+1,X  ; repeat with higher bit
+STA     PTR+1
+
+TXA
+LSR                     ; restore X register to initial state
+TAX
 
 PLA                     ; retrieve the ASCII text from stack
 STA     (PTR),Y         ; write the character on screen in the exact coordinate
@@ -87,18 +91,27 @@ The goal of this oddly specific module is to provide a way to copy the content o
 | **Y** | Int (displacement amount) | *garbage data* |
 
 > [!IMPORTANT]  
-> This module changes the value of the `TEMP` ZP variable.
+> This module changes the value of the `TEMP` and `PTR` ZP variable.
 
 ```asm
         STY     TEMP    ; store displacement value for reuse
 * OUTERMOST LOOP
-LOOP    LDX     #24     ; repeat the copying 24 times (24 rows on screen), starting with the bottom
+LOOP    LDX     #23     ; repeat the copying 24 times (24 rows on screen), starting with the bottom
 * COPYING LOOP
 * Retrieve the value to copy
-COPYLP  LDA     SCRNROWPTR,X
+COPYLP  TXA
+        ASL
+        TAX
+        LDA     SCRNROWPTR,X
         STA     PTR
+        LDA     SCRNROWPTR+1,X
+        STA     PTR+1
         LDA     (PTR),Y
         PHA             ; save the value to retrieve later
+* Restore modified X register
+        TXA
+        LSR
+        TAX
 * Adjust Y for printing coordinates
         TYA
         SEC
@@ -114,12 +127,10 @@ COPYLP  LDA     SCRNROWPTR,X
         TAY             ; transfer source to Y register
 * Decrease innermost copying loop
         DEX
-        BCS     COPYLP  ; jump if X is still positive
+        BNE     COPYLP  ; jump if X is still positive
 * Increase outermost loop
         INY
-        TYA             ; transfer to A to check #columns overflow
-        SEC
-        SBC     #39     ; 40 columns, so minus 39 to get A=0 if need to RTS
-        BEQ     RTS     ; RTS if A-39=0
+        CPY     #40
+        BEQ     RTS     ; RTS if overflow
         JMP     LOOP
 ```
