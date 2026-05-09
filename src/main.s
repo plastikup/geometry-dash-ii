@@ -36,6 +36,7 @@ MAIN	JSR	WAIT
 * Print keypress
 	JSR	DEBUG
 	JMP	MAIN
+QUIT	RTS
 
 
 ** SCROLL THE SCREEN AND PUT NEW TILES
@@ -72,9 +73,19 @@ SKIPFETCH	LDA	LVLCHRS,X
 	SEC
 	SBC	#1
 	STA	LVLQNT,X
-
-	DEX
+* Increment pointer value if count is null
+	BNE	SKIPINCRPTR
+	TXA
+	TAY
+	PHA
+	LDX	#1
+	JSR	INCRLVLPTR
+	PLA
+	TAX
+* Next row
+SKIPINCRPTR	DEX
 	BPL	SCROLLSCRNLP
+
 	JMP	MAIN
 
 ** =============== Map module ===============
@@ -105,14 +116,34 @@ FETCHMAPDATA	TXA
 
 	RTS
 
+
+** INCREMENT POINTER TABLE
+* Multiply X and Y registers by 2
+INCRLVLPTR	TYA
+	ASL		; each pointer is 2 bytes
+	TAY
+	TXA
+	ASL		; each map datum is 2 bytes
+	TAX
+
+* Add X to pointer
+	TXA
+	CLC
+	ADC	LVLPTR,Y
+	STA	LVLPTR,Y
+
+	LDA	LVLPTR+1,Y
+	ADC	#0	; propagate carry
+	STA	LVLPTR+1,Y
+
+	RTS
+
+
 ** ================= Utils =================
 ** REQUEST_ANIMATION_FRAME SUBROUTINE
 WAIT	LDA	#0	; 6Hz refresh rate
 	JSR	$FCA8	; builtin wait subroutine
 	RTS
-
-** GLOBAL RTS CALLABLE FROM BRANCHES
-QUIT	RTS
 
 ** ============ Screen modules =============
 ** WRITE VALUES
@@ -185,12 +216,12 @@ COPYLP	TXA
 * Decrease innermost copying loop
 	DEX
 	CPX	#5	; #6 is the last to copy, so #5 is overflow
-	BNE	COPYLP	; jump if X is still positive
+	BPL	COPYLP	; jump if X is still positive
 * Increase outermost loop
 	INY
 	CPY	#40	; 40 is the first column to overflow
-	BEQ	QUIT	; RTS if overflow
-	JMP	ADVCLOOP	; otherwise continue loop
+	BNE	ADVCLOOP	; no overflow so continue loop
+	RTS
 
 
 ** ======== CONSTANTS AND VARIABLES ========
@@ -214,18 +245,18 @@ LVLCHRS	DS	12
 LVLQNT	DS	12
 
 * Level data
-LVL0	HEX	D0D0D002C108
-LVL1	HEX	D0C1C102D008
-LVL2	HEX	D0C2C202D008
-LVL3	HEX	D0C3C302D008
-LVL4	HEX	D0C4C402D008
-LVL5	HEX	D0C5C502D008
-LVL6	HEX	D0C6C602D008
-LVL7	HEX	D0C5C702D008
-LVL8	HEX	D0C4C802D008
-LVL9	HEX	D0C3C902D008
-LVLA	HEX	D0C2CA02D008
-LVLB	HEX	D0FDCB02D008
+LVL0	HEX	D010D002C108
+LVL1	HEX	D011C102D008
+LVL2	HEX	D012C202D008
+LVL3	HEX	D013C302D008
+LVL4	HEX	D014C402D008
+LVL5	HEX	D015C502D008
+LVL6	HEX	D016C602D008
+LVL7	HEX	D015C702D008
+LVL8	HEX	D014C802D008
+LVL9	HEX	D013C902D008
+LVLA	HEX	D012CA02D008
+LVLB	HEX	FFFF
 
 ** SCREEN MODULE DATA
 * First columns pointers for the screen's pixels

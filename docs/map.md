@@ -87,10 +87,10 @@ Each pointer of the pointers table `LVLPTR` all initially point at the beginning
 ```asm
 * Multiply X and Y registers by 2
 TYA
-ASL     A   ; each pointer is 2 bytes
+ASL         ; each pointer is 2 bytes
 TAY
 TXA
-ASL     A   ; each map datum is 2 bytes
+ASL         ; each map datum is 2 bytes
 TAX
 
 * Add X to pointer
