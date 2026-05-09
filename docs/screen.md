@@ -94,9 +94,9 @@ The goal of this oddly specific module is to provide a way to copy the content o
 > This module changes the value of the `TEMP` and `PTR` ZP variable.
 
 ```asm
-        STY     TEMP    ; store displacement value for reuse
+        LDY     #1
 * OUTERMOST LOOP
-LOOP    LDX     #23     ; repeat the copying 24 times (24 rows on screen), starting with the bottom
+LOOP    LDX     #17     ; repeat copying 12 times starting with 17
 * COPYING LOOP
 * Retrieve the value to copy
 COPYLP  TXA
@@ -113,20 +113,15 @@ COPYLP  TXA
         LSR
         TAX
 * Adjust Y for printing coordinates
-        TYA
-        SEC
-        SBC     TEMP    ; adjust printing position to destination
-        TAY             ; transfer destination to Y register
+        DEY             ; transfer destination to Y register
 * Copy screen value
         PLA             ; retrieve value to print
         JSR     PRINT   ; print
 * Reset Y for retrieving coordinates
-        TYA
-        CLC
-        ADC    TEMP     ; adjust retrieving position to source
-        TAY             ; transfer source to Y register
+        INY             ; transfer source to Y register
 * Decrease innermost copying loop
         DEX
+        CMX     #5
         BNE     COPYLP  ; jump if X is still positive
 * Increase outermost loop
         INY

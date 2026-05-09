@@ -40,20 +40,33 @@ MAIN	JSR	WAIT
 
 ** SCROLL THE SCREEN AND PUT NEW TILES
 * Copy the content of the screen 1 block to the left
-SCROLLSCRN	LDY	#1
-	JSR	COPYSCRN
+SCROLLSCRN	JSR	COPYSCRN
 * Put new tiles on the last column
 	LDX	#11	; # of rows
-SCROLLSCRNLP	LDA	LVLQNT,X	
-	BNE	SKIPFETCH	
+SCROLLSCRNLP	LDA	LVLQNT,X
+	BNE	SKIPFETCH
 * Load new characters and count onto CHARS and QNT tables
-	JSR	SAVEREG
+	TXA		; save X register value (FETCHMAPDATA is destructive)
+	PHA
 	JSR	FETCHMAPDATA	; fetch data
-	JSR	VOMITREG
-* Print character on screen from CHARS table
+	PLA		; restore X register
+	TAX
+* Get character to print and push to stack
 SKIPFETCH	LDA	LVLCHRS,X
+	PHA
+* Adjust arguments and call print
 	LDY	#39
+	TXA
+	CLC
+	ADC	#6
+	TAX
+	PLA
 	JSR	PRINT
+* Restore X register after call
+	TXA
+	SEC
+	SBC	#6
+	TAX
 * Decrease QNT table
 	LDA	LVLQNT,X
 	SEC
@@ -101,22 +114,6 @@ WAIT	LDA	#0	; 6Hz refresh rate
 ** GLOBAL RTS CALLABLE FROM BRANCHES
 QUIT	RTS
 
-** REGISTERS
-SAVEREG	STA	REGTEMP	
-	TXA
-	PHA
-	TYA
-	PHA
-	LDA	REGTEMP
-	RTS
-
-VOMITREG	PLA
-	TAY
-	PLA
-	TAX
-	LDA	REGTEMP
-	RTS
-
 ** ============ Screen modules =============
 ** WRITE VALUES
 PRINT	PHA		; save ASCII text into stack
@@ -160,9 +157,8 @@ DEBUG	STA	TEMP	; keep the debugging ASCII text aside
 	RTS
 
 ** COPY SCREEN TOWARDS THE LEFT
-COPYSCRN	STY	TEMP	; store displacement value for reuse
-* OUTERMOST LOOP
-ADVCLOOP	LDX	#23	; repeat copying 24 times (24 rows) starting with the bottom
+COPYSCRN	LDY	#1
+ADVCLOOP	LDX	#17	; repeat copying 12 times starting with 17
 * COPYING LOOP
 * Multiply X by 2 because 2 bits per line
 COPYLP	TXA
@@ -180,20 +176,15 @@ COPYLP	TXA
 	LSR
 	TAX
 * Adjust Y for printing coordinates
-	TYA
-	SEC
-	SBC	TEMP	; adjust printing position to destination
-	TAY		; transfer destination to Y register
+	DEY
 * Copy screen value
 	PLA		; retrieve value to print
 	JSR	PRINT	; print
 * Reset Y for retrieving coordinates
-	TYA
-	CLC
-	ADC	TEMP	; adjust retrieving position to source
-	TAY		; transfer source to Y register
+	INY
 * Decrease innermost copying loop
 	DEX
+	CPX	#5	; #6 is the last to copy, so #5 is overflow
 	BNE	COPYLP	; jump if X is still positive
 * Increase outermost loop
 	INY
