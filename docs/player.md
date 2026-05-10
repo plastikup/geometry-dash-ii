@@ -16,11 +16,12 @@ The player subroutine is responsible for the character's physics. When called, i
 
 | Name | Addresses | Details |
 | :-: | :-: | - |
-| VPOS | `$80` | The vertical position of the player, times 8. |
-| VVELPOS | `$81` | The POSITIVE vertical velocity of the player, times 8. |
-| VVELNEG | `$81` | The NEGATIVE vertical velocity of the player, times 8. |
-| PHYSDELAY | `$82` | The delay between physics frames, relative to the game's framerate. |
-| ISAIR | `$83` | Boolean modified elsewhere that holds the truth whether the player is in the air or on the ground |
+| HPOS | `$80` | [CONSTANT] The horizontal position of the player, times 8. |
+| VPOS | `$81` | The vertical position of the player, times 8. |
+| VVELPOS | `$82` | The POSITIVE vertical velocity of the player, times 8. |
+| VVELNEG | `$83` | The NEGATIVE vertical velocity of the player, times 8. |
+| PHYSDELAY | `$84` | The delay between physics frames, relative to the game's framerate. |
+| ISAIR | `$85` | Boolean holding the truth whether the player is in the air or on the ground. |
 
 ### Vertical velocity positive-negative behavior
 

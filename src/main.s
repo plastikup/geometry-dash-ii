@@ -3,23 +3,38 @@
 PTR	EQU	$F6	; quick temporary pointer storage
 TEMP	EQU	$F5	; quick random value storage
 * Player
-VPOS	EQU	$80	; vertical position of the player, times 8
-VVELPOS	EQU	$81	; POSITIVE vertical velocity, times 8
-VVELNEG	EQU	$82	; NEGATIVE vertical velocity, times
-PHYSDELAY	EQU	$83	; physics frames delay
-ISAIR	EQU	$84	; flag indicating whether the player is in the air
+HPOS	EQU	$80	; CONSTANT - horizontal position of the player
+VPOS	EQU	$81	; vertical position of the player, times 8
+VVELPOS	EQU	$82	; POSITIVE vertical velocity, times 8
+VVELNEG	EQU	$83	; NEGATIVE vertical velocity, times
+PHYSDELAY	EQU	$84	; physics frames delay
+ISAIR	EQU	$85	; flag indicating whether the player is in the air
 
 ** ============ Start of program ===========
 	ORG	$8000
 ** INITIALIZATIONS
-	LDA	#$00
+	LDA	#5	; player is always at column #5, starting from #0
+	STA	HPOS
+
+	LDA	#0	; 8th row starting counting from 0th row
+	STA	VPOS
+
+	LDA	#0
+	STA	VVELNEG
+	STA	VVELPOS
 	STA	ISAIR
 
 	LDA	#1	; minimum required to start with physics counter
 	STA	PHYSDELAY
 
-	LDA	#64	; 8th row starting counting from 0th row
-	STA	VPOS
+** LOAD MAP
+	LDA	#40
+INITSCRN	PHA
+	JSR	SCROLLSCRN
+	PLA
+	SEC
+	SBC	#1
+	BNE	INITSCRN
 	JMP	MAIN
 
 ** ================= Utils =================
@@ -50,9 +65,10 @@ MAIN	JSR	WAIT
 	CMP	#$D1	; check against: Q key (quit)
 	BEQ	QUIT	; exit if quit key is pressed
 	CMP	#$C3	; check against: C key (copy screen)
-	BEQ	SCROLLSCRN	; jump if copy screen requested
+	BNE	SKIPSCROLL	; jump if copy screen requested
+	JSR	SCROLLSCRN
 * Print keypress
-	JSR	DEBUG
+SKIPSCROLL	JSR	DEBUG
 	JMP	MAIN
 QUIT	RTS
 
@@ -104,7 +120,7 @@ SKIPFETCH	LDA	LVLCHRS,X
 SKIPINCRPTR	DEX
 	BPL	SCROLLSCRNLP
 
-	JMP	MAIN
+	RTS
 
 ** =============== Map module ===============
 ** UPDATE TILE DATA TABLES
@@ -240,10 +256,12 @@ COPYLP	TXA
 ** PRIMARY PLAYER LOOP
 * Display player on screen
 PLAYER	JSR	DSPLYPLAYER
+* Verify if standing on ground
+	JSR	PLAYERAIRTIME
 * Apply physics if physics frame
 	DEC	PHYSDELAY
 	BNE	SKIPPHYS
-	LDA	#10	; frames between physics frame
+	LDA	#1	; frames between physics frame
 	STA	PHYSDELAY
 	JSR	PLAYERPHYS
 SKIPPHYS	RTS
@@ -251,17 +269,50 @@ SKIPPHYS	RTS
 
 ** Display player on screen (TBD: erase shadow)
 * Load player's current position
-DSPLYPLAYER	LDY	#5	; player is always at column #5, starting from #0
+DSPLYPLAYER	LDY	HPOS
 	LDA	VPOS	; player's vertical position, times 8
 	LSR
 	LSR
-	LSR
-	TAX		; player's actual vertical position relative to the screen
+	LSR		; player's actual vertical position
+	CLC
+	ADC	#6	; top row does not start at row 0
+	TAX
 * Print player on screen
 	LDA	#$0	; ctrl-@ is the player
 	JSR	PRINT
 
 	RTS
+
+** Verify if player is airtime
+* Get pointer pointing the row below the player
+PLAYERAIRTIME   LDA             VPOS
+                LSR		; divide by 2
+                LSR		; divide by 4
+                LSR		; divide by 8 to drop the sub-row remainder
+                ASL		; multiply by 2 because pointers are 2 bytes long
+                CLC		; first row of the game does not start at row 0
+                ADC	#14	; and we need an extra incr to reach the row below
+                TAX		; final vertical position
+* Load pointer to the row below
+	LDA	SCRNROWPTR,X
+	STA	PTR
+	LDA	SCRNROWPTR+1,X
+	STA	PTR+1
+* Get the ASCII character below the user
+	LDY	HPOS
+	LDA	(PTR),Y
+* Airtime if standing on space ($A0) character
+	CMP	#$A0	; space character
+	BEQ	SETAIRTIME
+* No air
+	LDA	#$00
+	STA	ISAIR
+	RTS
+* Yes air
+SETAIRTIME	LDA	#$FF
+	STA	ISAIR
+	RTS
+
 
 ** Apply gravity physics to player
 * Test which type of physics to apply
@@ -274,7 +325,6 @@ PLAYERPHYS	BIT	ISAIR
 	LDA	#0	; nullify velocities on ground
 	STA	VVELPOS
 	STA	VVELNEG
-	JSR	DEBUG
 	RTS
 * IS AIR
 APPLYGRAVITY	INC	VVELNEG	; gravity
@@ -284,7 +334,7 @@ APPLYGRAVITY	INC	VVELNEG	; gravity
 	SBC	VVELPOS	; because subtracting goes up on screen
 	CLC
 	ADC	VVELNEG	; same logic, adding goes down on screen
-	STA	VPOS
+	STA	VPOS	; TODO: ENSURE MAX GRAVITY SPEED IS 8
 
 	RTS
 
