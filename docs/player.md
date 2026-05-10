@@ -16,7 +16,14 @@ The player subroutine is responsible for the character's physics. When called, i
 
 | Name | Addresses | Details |
 | :-: | :-: | - |
-| XPOS | `$60 $61` | The X position of the player. |
-| YPOS | `$62` | The Y position of the player. Unlike XPOS, YPOS only needs to be one octet long because the map is not vertically scrollable. |
-| YVEL | `$63` | The Y velocity of the player. A value of +/-128 travels at 1 block per frame. |
-| YACC | `$64` | The Y acceleration of the player. Usually the gravity. A value of +/-128 speeds up at 1 block per frame. |
+| VPOS | `$80` | The vertical position of the player, times 8. |
+| VVELPOS | `$81` | The POSITIVE vertical velocity of the player, times 8. |
+| VVELNEG | `$81` | The NEGATIVE vertical velocity of the player, times 8. |
+| PHYSDELAY | `$82` | The delay between physics frames, relative to the game's framerate. |
+| ISAIR | `$83` | Boolean modified elsewhere that holds the truth whether the player is in the air or on the ground |
+
+### Vertical velocity positive-negative behavior
+
+The double positive-negative velocity variable is meant to be an alternative using signed numbers, which is used nowhere at all in the game. Jump inputs get translated into the positive velocity, whereas gravity is applied through the negative velocity.
+
+When `ISAIR` is false **AND** the negative velocity is greater than the positive one, ground collision is applied and both velocities are nullified.

@@ -1,17 +1,28 @@
-** Debugging only
-HOME	EQU	$FC58
-COUT	EQU	$FDED
-
 ** =============== Zero page ===============
-PTR	EQU	$70	; quick temporary pointer storage
+* Global
+PTR	EQU	$F6	; quick temporary pointer storage
 TEMP	EQU	$F5	; quick random value storage
-REGTEMP	EQU	$F4
+* Player
+VPOS	EQU	$80	; vertical position of the player, times 8
+VVELPOS	EQU	$81	; POSITIVE vertical velocity, times 8
+VVELNEG	EQU	$82	; NEGATIVE vertical velocity, times
+PHYSDELAY	EQU	$83	; physics frames delay
+ISAIR	EQU	$84	; flag indicating whether the player is in the air
 
 ** ============ Start of program ===========
 	ORG	$8000
+** INITIALIZATIONS
+	LDA	#$00
+	STA	ISAIR
+
+	LDA	#1	; minimum required to start with physics counter
+	STA	PHYSDELAY
+
+	LDA	#64	; 8th row starting counting from 0th row
+	STA	VPOS
 	JMP	MAIN
 
-** ========== Input capture module ==========
+** ================= Utils =================
 ** READ KEYPRESS
 INPUT	LDA	$C000	; read keystroke
 	BPL	NOKEY	; verify if A < $80
@@ -22,9 +33,16 @@ INPUT	LDA	$C000	; read keystroke
 NOKEY	LDA	#$00	; load neutral $00 flag
 	RTS		; return with no key
 
+** REQUEST_ANIMATION_FRAME SUBROUTINE
+WAIT	LDA	#0	; 6Hz refresh rate
+	JSR	$FCA8	; builtin wait subroutine
+	RTS
+
+
 ** ============= Main Functions ============
 ** MAIN LOOP
 MAIN	JSR	WAIT
+	JSR	PLAYER
 * Capture keypress
 	JSR	INPUT
 	CMP	#$00	; check against: neutral $00 flag
@@ -139,12 +157,6 @@ INCRLVLPTR	TYA
 	RTS
 
 
-** ================= Utils =================
-** REQUEST_ANIMATION_FRAME SUBROUTINE
-WAIT	LDA	#0	; 6Hz refresh rate
-	JSR	$FCA8	; builtin wait subroutine
-	RTS
-
 ** ============ Screen modules =============
 ** WRITE VALUES
 PRINT	PHA		; save ASCII text into stack
@@ -216,11 +228,64 @@ COPYLP	TXA
 * Decrease innermost copying loop
 	DEX
 	CPX	#5	; #6 is the last to copy, so #5 is overflow
-	BPL	COPYLP	; jump if X is still positive
+	BNE	COPYLP	; jump if X is still positive
 * Increase outermost loop
 	INY
 	CPY	#40	; 40 is the first column to overflow
 	BNE	ADVCLOOP	; no overflow so continue loop
+	RTS
+
+
+** ========= Player related modules ========
+** PRIMARY PLAYER LOOP
+* Display player on screen
+PLAYER	JSR	DSPLYPLAYER
+* Apply physics if physics frame
+	DEC	PHYSDELAY
+	BNE	SKIPPHYS
+	LDA	#10	; frames between physics frame
+	STA	PHYSDELAY
+	JSR	PLAYERPHYS
+SKIPPHYS	RTS
+
+
+** Display player on screen (TBD: erase shadow)
+* Load player's current position
+DSPLYPLAYER	LDY	#5	; player is always at column #5, starting from #0
+	LDA	VPOS	; player's vertical position, times 8
+	LSR
+	LSR
+	LSR
+	TAX		; player's actual vertical position relative to the screen
+* Print player on screen
+	LDA	#$0	; ctrl-@ is the player
+	JSR	PRINT
+
+	RTS
+
+** Apply gravity physics to player
+* Test which type of physics to apply
+PLAYERPHYS	BIT	ISAIR
+	BNE	APPLYGRAVITY	; isair != 0 AKA isair isnt false AKA isair is true
+	LDA	VVELNEG
+	CMP	VVELPOS
+	BCC	APPLYGRAVITY	; NEG smaller than POS AKA jumping up into air
+* IS GROUND
+	LDA	#0	; nullify velocities on ground
+	STA	VVELPOS
+	STA	VVELNEG
+	JSR	DEBUG
+	RTS
+* IS AIR
+APPLYGRAVITY	INC	VVELNEG	; gravity
+* apply positional physics on player
+	LDA	VPOS
+	SEC
+	SBC	VVELPOS	; because subtracting goes up on screen
+	CLC
+	ADC	VVELNEG	; same logic, adding goes down on screen
+	STA	VPOS
+
 	RTS
 
 
