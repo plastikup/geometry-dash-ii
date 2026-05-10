@@ -16,7 +16,7 @@ ISAIR	EQU	$85	; flag indicating whether the player is in the air
 	LDA	#5	; player is always at column #5, starting from #0
 	STA	HPOS
 
-	LDA	#0	; 8th row starting counting from 0th row
+	LDA	#64	; 8th row starting counting from 0th row
 	STA	VPOS
 
 	LDA	#0
@@ -64,15 +64,11 @@ MAIN	JSR	WAIT
 	BEQ	CONTINUE
 	RTS
 CONTINUE	JSR	PLAYER
+	JSR	SCROLLSCRN
 * Capture keypress
 	JSR	INPUT
-	CMP	#$00	; check against: neutral $00 flag
-	BEQ	MAIN	; jump if neutral flag
 	CMP	#$D1	; check against: Q key (quit)
 	BEQ	QUIT	; exit if quit key is pressed
-	CMP	#$C3	; check against: C key (copy screen)
-	BNE	SKIPSCROLL	; jump if copy screen requested
-	JSR	SCROLLSCRN
 * Print keypress
 SKIPSCROLL	JSR	DEBUG
 	JMP	MAIN
