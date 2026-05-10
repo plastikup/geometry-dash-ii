@@ -69,11 +69,14 @@ CONTINUE	JSR	PLAYER
 	JSR	INPUT
 	CMP	#$D1	; check against: Q key (quit)
 	BEQ	QUIT	; exit if quit key is pressed
+	CMP	#$A0	; check against: space key (jump)
+	BNE	SKIPSCROLL
+	LDA	#8
+	STA	VVELPOS
 * Print keypress
 SKIPSCROLL	JSR	DEBUG
 	JMP	MAIN
 QUIT	RTS
-
 
 ** SCROLL THE SCREEN AND PUT NEW TILES
 * Copy the content of the screen 1 block to the left
