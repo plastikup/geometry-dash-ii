@@ -7,9 +7,10 @@ HPOS	EQU	$80	; CONSTANT - horizontal position of the player
 VPOS	EQU	$81	; vertical position of the player, times 8
 VVELPOS	EQU	$82	; POSITIVE vertical velocity, times 8
 VVELNEG	EQU	$83	; NEGATIVE vertical velocity, times
-PHYSDELAY	EQU	$84	; physics frames delay
 ISAIR	EQU	$85	; flag indicating whether the player is in the air
 FORCEDJMP	EQU	$86	; FF if forced jump
+
+SCRNREFRESH	EQU	$90	; frames between next refresh
 
 ** ============ Start of program ===========
 	ORG	$8000
@@ -25,12 +26,30 @@ FORCEDJMP	EQU	$86	; FF if forced jump
 	STA	VVELPOS
 	STA	ISAIR
 
-	LDA	#1	; minimum required to start with physics counter
-	STA	PHYSDELAY
+	LDA	#1
+	STA	SCRNREFRESH
+
+** LOAD LVLPTRS
+	LDX	#0
+LOADLVLPTRS	LDA	INITIALLVLPTR,X
+	STA	LVLPTR,X
+	INX
+	CPX	#24
+	BNE	LOADLVLPTRS
+
+	LDX	#0
+	LDA	#0
+RESETQNTCHRS	STA	LVLCHRS,X
+	STA	LVLQNT,X
+	INX
+	CPX	#12
+	BNE	RESETQNTCHRS
 
 ** LOAD MAP
 	LDA	#40
 INITSCRN	PHA
+	LDA	#1	; overwrite screen refresh
+	STA	SCRNREFRESH
 	JSR	SCROLLSCRN
 	PLA
 	SEC
@@ -50,7 +69,7 @@ NOKEY	LDA	#$00	; load neutral $00 flag
 	RTS		; return with no key
 
 ** REQUEST_ANIMATION_FRAME SUBROUTINE
-WAIT	LDA	#0	; 6Hz refresh rate
+WAIT	LDA	#101	; 38Hz refresh rate
 	JSR	$FCA8	; builtin wait subroutine
 	RTS
 
@@ -72,7 +91,7 @@ CONTINUE	JSR	PLAYER
 	BEQ	QUIT	; exit if quit key is pressed
 	CMP	#$A0	; check against: space key (jump)
 	BNE	SKIPSCROLL
-JUMP	LDA	#8
+JUMP	LDA	#7	; jump height
 	STA	VVELPOS
 	LDA	#$00
 	STA	FORCEDJMP
@@ -85,8 +104,14 @@ SKIPSCROLL	LDA	FORCEDJMP
 QUIT	RTS
 
 ** SCROLL THE SCREEN AND PUT NEW TILES
+SCROLLSCRN	DEC	SCRNREFRESH
+	BEQ	SCRNRFRSHNOW
+	RTS
+* Reset refresh count
+SCRNRFRSHNOW	LDA	#1	; frames between each screen refresh
+	STA	SCRNREFRESH
 * Copy the content of the screen 1 block to the left
-SCROLLSCRN	JSR	COPYSCRN
+	JSR	COPYSCRN
 * Put new tiles on the last column
 	LDX	#11	; # of rows
 SCROLLSCRNLP	LDA	LVLQNT,X
@@ -270,12 +295,8 @@ PLAYER	JSR	DSPLYPLAYER
 * Verify if standing on ground
 	JSR	PLAYERAIRTIME
 * Apply physics if physics frame
-	DEC	PHYSDELAY
-	BNE	SKIPPHYS
-	LDA	#1	; frames between physics frame
-	STA	PHYSDELAY
 	JSR	PLAYERPHYS
-SKIPPHYS	RTS
+	RTS
 
 
 ** Display player on screen (TBD: erase shadow)
@@ -378,7 +399,7 @@ DEATH	LDA             VPOS	; VPOS times 8
 ** ======== CONSTANTS AND VARIABLES ========
 ** MAP MODULE DATA AND POINTERS
 * Common tables
-LVLPTR
+INITIALLVLPTR
 	DA	LVL0
 	DA	LVL1
 	DA	LVL2
@@ -392,6 +413,7 @@ LVLPTR
 	DA	LVLA
 	DA	LVLB
 
+LVLPTR	DS	24
 LVLCHRS	DS	12
 LVLQNT	DS	12
 
