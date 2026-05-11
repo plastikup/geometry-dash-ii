@@ -18,10 +18,11 @@ The player subroutine is responsible for the character's physics. When called, i
 | :-: | :-: | - |
 | HPOS | `$80` | [CONSTANT] The horizontal position of the player, times 8. |
 | VPOS | `$81` | The vertical position of the player, times 8. |
-| VVELPOS | `$82` | The POSITIVE vertical velocity of the player, times 8. |
-| VVELNEG | `$83` | The NEGATIVE vertical velocity of the player, times 8. |
-| PHYSDELAY | `$84` | The delay between physics frames, relative to the game's framerate. |
+| OVPOS | `$82` | The PREVIOUS vertical position of the player, times 8. |
+| VVELPOS | `$83` | The POSITIVE vertical velocity of the player, times 8. |
+| VVELNEG | `$84` | The NEGATIVE vertical velocity of the player, times 8. |
 | ISAIR | `$85` | Boolean holding the truth whether the player is in the air or on the ground. |
+| FORCEDJUMP | `$86` | Boolean holding the truth whether the player is on top of a jump pad. |
 
 ### Vertical velocity positive-negative behavior
 

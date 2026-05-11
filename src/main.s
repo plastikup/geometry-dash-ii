@@ -5,8 +5,9 @@ TEMP	EQU	$F5	; quick random value storage
 * Player
 HPOS	EQU	$80	; CONSTANT - horizontal position of the player
 VPOS	EQU	$81	; vertical position of the player, times 8
-VVELPOS	EQU	$82	; POSITIVE vertical velocity, times 8
-VVELNEG	EQU	$83	; NEGATIVE vertical velocity, times
+OVPOS	EQU	$82	; OLD vertical position of the player, times 8
+VVELPOS	EQU	$83	; POSITIVE vertical velocity, times 8
+VVELNEG	EQU	$84	; NEGATIVE vertical velocity, times
 ISAIR	EQU	$85	; flag indicating whether the player is in the air
 FORCEDJMP	EQU	$86	; FF if forced jump
 
@@ -20,6 +21,8 @@ SCRNREFRESH	EQU	$90	; frames between next refresh
 
 	LDA	#16	; 8th row starting counting from 0th row
 	STA	VPOS
+	LDA	#80
+	STA	OVPOS
 
 	LDA	#0
 	STA	VVELNEG
@@ -155,6 +158,9 @@ SKIPFETCH	LDA	LVLCHRS,X
 * Next row
 SKIPINCRPTR	DEX
 	BPL	SCROLLSCRNLP
+* Redraw player
+	JSR	DSPLYPLAYER	; draw new player
+	JSR	EPSFROMH	; erase old shadow
 
 	RTS
 
@@ -290,29 +296,10 @@ COPYLP	TXA
 
 ** ========= Player related modules ========
 ** PRIMARY PLAYER LOOP
-* Display player on screen
-PLAYER	JSR	DSPLYPLAYER
-* Verify if standing on ground
-	JSR	PLAYERAIRTIME
-* Apply physics if physics frame
-	JSR	PLAYERPHYS
-	RTS
-
-
-** Display player on screen (TBD: erase shadow)
-* Load player's current position
-DSPLYPLAYER	LDY	HPOS
-	LDA	VPOS	; player's vertical position, times 8
-	LSR
-	LSR
-	LSR		; player's actual vertical position
-	CLC
-	ADC	#6	; top row does not start at row 0
-	TAX
-* Print player on screen
-	LDA	#$0	; ctrl-@ is the player
-	JSR	PRINT
-
+* Display player on screen is handled by player physics
+* if and only if the player has been moved
+PLAYER	JSR	PLAYERAIRTIME	; Verify if standing on ground
+	JSR	PLAYERPHYS	; Apply physics if physics frame
 	RTS
 
 ** Verify if player is airtime
@@ -382,9 +369,66 @@ SKIPNEGGRAV	LDA	VPOS
 	SBC	VVELPOS	; because subtracting goes up on screen
 	CLC
 	ADC	VVELNEG	; same logic, adding goes down on screen
-	STA	VPOS	; TODO: ENSURE MAX GRAVITY SPEED IS 8
+	CMP	VPOS
+	BNE	VERLET
+	RTS
+VERLET
+	LDX	VPOS
+	STX	OVPOS	; record old position
+	STA	VPOS
+	JSR	DSPLYPLAYER	; update new player position on screen
+	JSR	EPSFROMV	; remove player shadow
+	RTS
+
+** Display player on screen
+* Load player's current position
+DSPLYPLAYER	LDY	HPOS
+	LDA	VPOS	; player's vertical position, times 8
+	LSR
+	LSR
+	LSR		; player's actual vertical position
+	CLC
+	ADC	#6	; top row does not start at row 0
+	TAX
+* Print player on screen
+	LDA	#$0	; ctrl-@ is the player
+	JSR	PRINT
+
+** Erase player shadow (EPS) because of vertical movement
+* Load player's old position
+EPSFROMV	LDY	HPOS
+	LDA	OVPOS	; OLD vertical position times 8 again
+	LSR
+	LSR
+	LSR		; player's actual old vertical position
+	CLC
+	ADC	#6	; top row does not start at row 0
+	TAX
+* Replace player's old shadow
+	LDA	#$A0	; space char
+	JSR	PRINT
 
 	RTS
+
+** Erase player shadow (EPS) because of horizontal movement
+* Load player's old position
+EPSFROMH	LDY	HPOS
+	DEY
+	LDA	VPOS	; OLD vertical position times 8 again
+	LSR
+	LSR
+	LSR		; player's actual old vertical position
+	CLC
+	ADC	#6	; top row does not start at row 0
+	TAX
+* Replace player's old shadow
+	LDA	#$A0	; space char
+	JSR	PRINT
+
+	RTS
+
+
+
 
 ** Check if the player is dead
 DEATH	LDA             VPOS	; VPOS times 8
