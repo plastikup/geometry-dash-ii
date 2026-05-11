@@ -9,7 +9,7 @@ ascii_char_lookup_table_offset = 160
 with open('tools/in.txt', 'r', encoding='utf-8') as file:
 	compiled_level = []
 
-	for line in file:
+	for i, line in enumerate(file):
 		line = line.strip()
 
 		result = []
@@ -18,7 +18,7 @@ with open('tools/in.txt', 'r', encoding='utf-8') as file:
 
 		# counting loop
 		for char in line[1:]:
-			if char == current: count += 1
+			if char == current and count < 255: count += 1
 			else:
 				# translate char into ascii byte
 				ascii_byte_dec = ascii_char_lookup_table.find(current) + ascii_char_lookup_table_offset
@@ -33,14 +33,15 @@ with open('tools/in.txt', 'r', encoding='utf-8') as file:
 
 		# flush last run
 		# translate char into ascii byte
-		print(ascii_char_lookup_table.find(current) + ascii_char_lookup_table_offset)
 		ascii_byte_dec = ascii_char_lookup_table.find(current) + ascii_char_lookup_table_offset
 		ascii_byte = f"{ascii_byte_dec:02X}" # turn decimal to capitalized hexadecimal
 		# turn count into hex
 		count_byte = f"{count:02X}"
 		result.append(f"{ascii_byte}{count_byte}")
 		# format into string and save
-		compiled_level.append(f"{"".join(result)}\n")
+		for j in range(0, len(result), 16):
+			head = f'LVL{i:X}	HEX	' if j == 0 else f'	HEX	'
+			compiled_level.append(f"{head}{"".join(result[j:min(j+16,len(result))])}\n")
 
 	# get filename from current timestamp
 	current_time_iso = datetime.now().isoformat()
