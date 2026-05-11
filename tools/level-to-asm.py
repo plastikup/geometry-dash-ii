@@ -3,8 +3,8 @@
 from datetime import datetime
 
 # This lookup table is used to translate characters into their corresponding ascii byte on the 6502
-ascii_char_lookup_table = r" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_‘abcdefghijklmnopqrstuvwxyz{|}~▒"
-ascii_char_lookup_table_offset = 129
+ascii_char_lookup_table = r' !"'+r"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_‘abcdefghijklmnopqrstuvwxyz{|}~▒"
+ascii_char_lookup_table_offset = 160
 
 with open('tools/in.txt', 'r', encoding='utf-8') as file:
 	compiled_level = []
@@ -32,7 +32,13 @@ with open('tools/in.txt', 'r', encoding='utf-8') as file:
 				count = 1
 
 		# flush last run
-		result.append(f"{current.upper()}{count:02X}")
+		# translate char into ascii byte
+		print(ascii_char_lookup_table.find(current) + ascii_char_lookup_table_offset)
+		ascii_byte_dec = ascii_char_lookup_table.find(current) + ascii_char_lookup_table_offset
+		ascii_byte = f"{ascii_byte_dec:02X}" # turn decimal to capitalized hexadecimal
+		# turn count into hex
+		count_byte = f"{count:02X}"
+		result.append(f"{ascii_byte}{count_byte}")
 		# format into string and save
 		compiled_level.append(f"{"".join(result)}\n")
 
