@@ -9,6 +9,7 @@ VVELPOS	EQU	$82	; POSITIVE vertical velocity, times 8
 VVELNEG	EQU	$83	; NEGATIVE vertical velocity, times
 PHYSDELAY	EQU	$84	; physics frames delay
 ISAIR	EQU	$85	; flag indicating whether the player is in the air
+FORCEDJMP	EQU	$86	; FF if forced jump
 
 ** ============ Start of program ===========
 	ORG	$8000
@@ -71,10 +72,15 @@ CONTINUE	JSR	PLAYER
 	BEQ	QUIT	; exit if quit key is pressed
 	CMP	#$A0	; check against: space key (jump)
 	BNE	SKIPSCROLL
-	LDA	#8
+JUMP	LDA	#8
 	STA	VVELPOS
+	LDA	#$00
+	STA	FORCEDJMP
 * Print keypress
-SKIPSCROLL	JSR	DEBUG
+SKIPSCROLL	LDA	FORCEDJMP
+	CMP	#$FF
+	BEQ	JUMP
+	JSR	DEBUG
 	JMP	MAIN
 QUIT	RTS
 
@@ -309,13 +315,20 @@ PLAYERAIRTIME   LDA             VPOS
 * Airtime if standing on space ($A0) character
 	CMP	#$A0	; space character
 	BEQ	SETAIRTIME
+	CMP	#$CF
+	BEQ	SETJUMP
 * No air
 	LDA	#$00
 	STA	ISAIR
+	STA	FORCEDJMP
 	RTS
 * Yes air
 SETAIRTIME	LDA	#$FF
 	STA	ISAIR
+	RTS
+* Forced jump
+SETJUMP	LDA	#$FF
+	STA	FORCEDJMP
 	RTS
 
 
