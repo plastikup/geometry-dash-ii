@@ -18,7 +18,7 @@ SCRNREFRESH	EQU	$90	; frames between next refresh
 	LDA	#5	; player is always at column #5, starting from #0
 	STA	HPOS
 
-	LDA	#64	; 8th row starting counting from 0th row
+	LDA	#16	; 8th row starting counting from 0th row
 	STA	VPOS
 
 	LDA	#0
@@ -91,7 +91,7 @@ CONTINUE	JSR	PLAYER
 	BEQ	QUIT	; exit if quit key is pressed
 	CMP	#$A0	; check against: space key (jump)
 	BNE	SKIPSCROLL
-JUMP	LDA	#7	; jump height
+JUMP	LDA	#8	; jump height
 	STA	VVELPOS
 	LDA	#$00
 	STA	FORCEDJMP
@@ -108,7 +108,7 @@ SCROLLSCRN	DEC	SCRNREFRESH
 	BEQ	SCRNRFRSHNOW
 	RTS
 * Reset refresh count
-SCRNRFRSHNOW	LDA	#1	; frames between each screen refresh
+SCRNRFRSHNOW	LDA	#2	; frames per screen refresh
 	STA	SCRNREFRESH
 * Copy the content of the screen 1 block to the left
 	JSR	COPYSCRN
@@ -366,9 +366,18 @@ PLAYERPHYS	BIT	ISAIR
 	STA	VVELNEG
 	RTS
 * IS AIR
-APPLYGRAVITY	INC	VVELNEG	; gravity
-* apply positional physics on player
-	LDA	VPOS
+* Verify if negative gravity does not exceed 8
+APPLYGRAVITY	LDA	VVELNEG
+	CMP	VVELPOS
+	BCC	INCVVELNEG	; if neg smaller than pos, dont think
+	SEC		; otherwise, pos is smaller so check
+	SBC	VVELPOS	; overall downwards speed
+	CMP	#8
+	BCS	SKIPNEGGRAV	; speeds that exceed 8 skips lines
+* Apply gravity
+INCVVELNEG	INC	VVELNEG
+* Apply positional physics on player
+SKIPNEGGRAV	LDA	VPOS
 	SEC
 	SBC	VVELPOS	; because subtracting goes up on screen
 	CLC
