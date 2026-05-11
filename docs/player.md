@@ -22,6 +22,7 @@ The player subroutine is responsible for the character's physics. When called, i
 | VVELNEG | `$83` | The NEGATIVE vertical velocity of the player, times 8. |
 | PHYSDELAY | `$84` | The delay between physics frames, relative to the game's framerate. |
 | ISAIR | `$85` | Boolean holding the truth whether the player is in the air or on the ground. |
+| FORCEDJUMP | `$86` | Boolean holding the truth whether the player is on top of a jump pad. |
 
 ### Vertical velocity positive-negative behavior
 

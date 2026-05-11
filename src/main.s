@@ -382,7 +382,7 @@ SKIPNEGGRAV	LDA	VPOS
 	SBC	VVELPOS	; because subtracting goes up on screen
 	CLC
 	ADC	VVELNEG	; same logic, adding goes down on screen
-	STA	VPOS	; TODO: ENSURE MAX GRAVITY SPEED IS 8
+	STA	VPOS
 
 	RTS
 
